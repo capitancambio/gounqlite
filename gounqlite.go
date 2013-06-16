@@ -4,11 +4,14 @@ package gounqlite
 /*
 #cgo LDFLAGS: -lunqlite
 #include <unqlite.h>
+#include <stdlib.h>
 */
 import "C"
 
 import (
+	"errors"
 	"fmt"
+	"unsafe"
 )
 
 type Errno int
@@ -73,8 +76,39 @@ var errText = map[Errno]string{
 	-1:  "Out of memory",
 }
 
+type Conn struct {
+	db *C.unqlite
+}
+
+func Open(filename string) (*Conn, error) {
+	// TODO(ceh): default to thread-safe operation only?
+	var db *C.unqlite
+	name := C.CString(filename)
+	defer C.free(unsafe.Pointer(name))
+	rv := C.unqlite_open(&db, name, C.UNQLITE_OPEN_CREATE)
+	if rv != C.UNQLITE_OK {
+		return nil, errors.New(Errno(rv).Error())
+	}
+	if db == nil {
+		return nil, errors.New("unqlite unable to allocate memory to hold the database")
+	}
+	return &Conn{db}, nil
+}
+
+func (c *Conn) Close() error {
+	if c == nil || c.db == nil {
+		return errors.New("nil unqlite database")
+	}
+	rv := C.unqlite_close(c.db)
+	if rv != C.UNQLITE_OK {
+		return errors.New(Errno(rv).Error())
+	}
+	c.db = nil
+	return nil
+}
+
 func Threadsafe() bool {
-	return int(C.unqlite_lib_is_threadsafe()) == 1
+	return C.unqlite_lib_is_threadsafe() == 1
 }
 
 func Version() string {
