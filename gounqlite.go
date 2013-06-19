@@ -87,7 +87,7 @@ func Open(filename string) (*Conn, error) {
 	defer C.free(unsafe.Pointer(name))
 	rv := C.unqlite_open(&db, name, C.UNQLITE_OPEN_CREATE)
 	if rv != C.UNQLITE_OK {
-		return nil, errors.New(Errno(rv).Error())
+		return nil, Errno(rv)
 	}
 	if db == nil {
 		return nil, errors.New("unqlite unable to allocate memory to hold the database")
@@ -101,10 +101,34 @@ func (c *Conn) Close() error {
 	}
 	rv := C.unqlite_close(c.db)
 	if rv != C.UNQLITE_OK {
-		return errors.New(Errno(rv).Error())
+		return Errno(rv)
 	}
 	c.db = nil
 	return nil
+}
+
+func (c *Conn) Store(key, value []byte) error {
+	rv := C.unqlite_kv_store(c.db, unsafe.Pointer(&key[0]), C.int(len(key)), unsafe.Pointer(&value[0]), C.unqlite_int64(len(value)))
+	if rv == C.UNQLITE_OK {
+		return nil
+	}
+	return Errno(rv)
+}
+
+func (c *Conn) Fetch(key []byte) ([]byte, error) {
+	// Fetch size of value.
+	var n C.unqlite_int64
+	rv := C.unqlite_kv_fetch(c.db, unsafe.Pointer(&key[0]), C.int(len(key)), nil, &n)
+	if rv != C.UNQLITE_OK {
+		return nil, Errno(rv)
+	}
+	// Fetch value.
+	b := make([]byte, int(n))
+	rv = C.unqlite_kv_fetch(c.db, unsafe.Pointer(&key[0]), C.int(len(key)), unsafe.Pointer(&b[0]), &n)
+	if rv != C.UNQLITE_OK {
+		return nil, Errno(rv)
+	}
+	return b, nil
 }
 
 func Threadsafe() bool {
