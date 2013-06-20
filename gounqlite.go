@@ -115,6 +115,7 @@ func (c *Conn) Store(key, value []byte) error {
 	return Errno(rv)
 }
 
+// Fetch retrieves a record from the database.
 func (c *Conn) Fetch(key []byte) ([]byte, error) {
 	// Fetch size of value.
 	var n C.unqlite_int64
@@ -129,6 +130,15 @@ func (c *Conn) Fetch(key []byte) ([]byte, error) {
 		return nil, Errno(rv)
 	}
 	return b, nil
+}
+
+// Delete removes a record from the database.
+func (c *Conn) Delete(key []byte) error {
+	rv := C.unqlite_kv_delete(c.db, unsafe.Pointer(&key[0]), C.int(len(key)))
+	if rv != C.UNQLITE_OK {
+		return Errno(rv)
+	}
+	return nil
 }
 
 func Threadsafe() bool {

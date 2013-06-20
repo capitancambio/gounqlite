@@ -58,3 +58,34 @@ func TestStore(t *testing.T) {
 		}
 	}
 }
+
+func TestDelete(t *testing.T) {
+	c, err := Open(":mem:")
+	if err != nil {
+		t.Fatalf("Open(\":mem:\") error: %s", err)
+	}
+	defer c.Close()
+
+	for _, p := range keyValuePairs {
+		// Test delete non-existing records.
+		if err := c.Delete(p.key); err != ErrNotFound {
+			t.Fatalf("c.Delete(%v) = %v, expected %v", p.key, err, ErrNotFound)
+		}
+		// Store records.
+		if err := c.Store(p.key, p.value); err != nil {
+			t.Fatalf("c.Store(%v, %v) error: %v", p.key, p.value, err)
+		}
+		// Fetch and compare records to make sure that they were stored.
+		b, err := c.Fetch(p.key)
+		if err != nil {
+			t.Fatalf("c.Fetch(%v) error: %v", p.key, err)
+		}
+		if !bytes.Equal(b, p.value) {
+			t.Errorf("c.Fetch(%v) = %v, expected %v", p.key, b, p.value)
+		}
+		// Test delete records.
+		if err := c.Delete(p.key); err != nil {
+			t.Fatalf("c.Delete(%v) = %v, expected %v", p.key, err, nil)
+		}
+	}
+}
