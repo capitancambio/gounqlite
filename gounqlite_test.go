@@ -59,6 +59,35 @@ func TestStore(t *testing.T) {
 	}
 }
 
+func TestAppend(t *testing.T) {
+	c, err := Open(":mem:")
+	if err != nil {
+		t.Fatalf("Open(\":mem:\") error: %s", err)
+	}
+	defer c.Close()
+	p := keyValuePairs[0]
+	if err := c.Store(p.key, p.value); err != nil {
+		t.Fatalf("c.Store(%v, %v) error: %v", p.key, p.value, err)
+	}
+	b, err := c.Fetch(p.key)
+	if err != nil {
+		t.Fatalf("c.Fetch(%v) error: %v", p.key, err)
+	}
+	if !bytes.Equal(b, p.value) {
+		t.Errorf("c.Fetch(%v) = %v, expected %v", p.key, b, p.value)
+	}
+	if err := c.Append(p.key, p.value); err != nil {
+		t.Fatalf("c.Append(%v, %v) error: %v", p.key, p.value, err)
+	}
+	bb, err := c.Fetch(p.key)
+	if err != nil {
+		t.Fatalf("c.Fetch(%v) error: %v", p.key, err)
+	}
+	if !bytes.Equal(bb, append(b, b...)) {
+		t.Errorf("c.Fetch(%v) = %v, expected %v", p.key, bb, append(b, b...))
+	}
+}
+
 func TestDelete(t *testing.T) {
 	c, err := Open(":mem:")
 	if err != nil {

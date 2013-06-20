@@ -115,6 +115,14 @@ func (c *Conn) Store(key, value []byte) error {
 	return Errno(rv)
 }
 
+func (c *Conn) Append(key, value []byte) error {
+	rv := C.unqlite_kv_append(c.db, unsafe.Pointer(&key[0]), C.int(len(key)), unsafe.Pointer(&value[0]), C.unqlite_int64(len(value)))
+	if rv == C.UNQLITE_OK {
+		return nil
+	}
+	return Errno(rv)
+}
+
 // Fetch retrieves a record from the database.
 func (c *Conn) Fetch(key []byte) ([]byte, error) {
 	// Fetch size of value.
