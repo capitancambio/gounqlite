@@ -28,6 +28,18 @@ func ExampleOpen() {
 	db.Close()
 }
 
+func ExampleClose() {
+	db, err := gounqlite.Open(":mem:")
+	check(err)
+
+	err = db.Close()
+	check(err)
+
+	err = db.Close()
+	fmt.Println(err)
+	// Output: nil unqlite database
+}
+
 func ExampleConn_Store() {
 	db, err := gounqlite.Open(":mem:")
 	check(err)
