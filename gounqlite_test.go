@@ -14,13 +14,13 @@ func TestErrnoError(t *testing.T) {
 }
 
 func TestOpenCloseInMemoryDatabase(t *testing.T) {
-	c, err := Open(":mem:")
+	db, err := Open(":mem:")
 	if err != nil {
 		t.Fatalf("Open(\":mem:\") error: %s", err)
 	}
-	err = c.Close()
+	err = db.Close()
 	if err != nil {
-		t.Fatalf("c.Close() error: %s", err)
+		t.Fatalf("db.Close() error: %s", err)
 	}
 }
 
@@ -39,82 +39,82 @@ var keyValuePairs = []keyValuePair{
 }
 
 func TestStore(t *testing.T) {
-	c, err := Open(":mem:")
+	db, err := Open(":mem:")
 	if err != nil {
 		t.Fatalf("Open(\":mem:\") error: %s", err)
 	}
-	defer c.Close()
+	defer db.Close()
 
 	for _, p := range keyValuePairs {
-		if err := c.Store(p.key, p.value); err != nil {
-			t.Fatalf("c.Store(%v, %v) error: %v", p.key, p.value, err)
+		if err := db.Store(p.key, p.value); err != nil {
+			t.Fatalf("db.Store(%v, %v) error: %v", p.key, p.value, err)
 		}
-		b, err := c.Fetch(p.key)
+		b, err := db.Fetch(p.key)
 		if err != nil {
-			t.Fatalf("c.Fetch(%v) error: %v", p.key, err)
+			t.Fatalf("db.Fetch(%v) error: %v", p.key, err)
 		}
 		if !bytes.Equal(b, p.value) {
-			t.Errorf("c.Fetch(%v) = %v, expected %v", p.key, b, p.value)
+			t.Errorf("db.Fetch(%v) = %v, expected %v", p.key, b, p.value)
 		}
 	}
 }
 
 func TestAppend(t *testing.T) {
-	c, err := Open(":mem:")
+	db, err := Open(":mem:")
 	if err != nil {
 		t.Fatalf("Open(\":mem:\") error: %s", err)
 	}
-	defer c.Close()
+	defer db.Close()
 	p := keyValuePairs[0]
-	if err := c.Store(p.key, p.value); err != nil {
-		t.Fatalf("c.Store(%v, %v) error: %v", p.key, p.value, err)
+	if err := db.Store(p.key, p.value); err != nil {
+		t.Fatalf("db.Store(%v, %v) error: %v", p.key, p.value, err)
 	}
-	b, err := c.Fetch(p.key)
+	b, err := db.Fetch(p.key)
 	if err != nil {
-		t.Fatalf("c.Fetch(%v) error: %v", p.key, err)
+		t.Fatalf("db.Fetch(%v) error: %v", p.key, err)
 	}
 	if !bytes.Equal(b, p.value) {
-		t.Errorf("c.Fetch(%v) = %v, expected %v", p.key, b, p.value)
+		t.Errorf("db.Fetch(%v) = %v, expected %v", p.key, b, p.value)
 	}
-	if err := c.Append(p.key, p.value); err != nil {
-		t.Fatalf("c.Append(%v, %v) error: %v", p.key, p.value, err)
+	if err := db.Append(p.key, p.value); err != nil {
+		t.Fatalf("db.Append(%v, %v) error: %v", p.key, p.value, err)
 	}
-	bb, err := c.Fetch(p.key)
+	bb, err := db.Fetch(p.key)
 	if err != nil {
-		t.Fatalf("c.Fetch(%v) error: %v", p.key, err)
+		t.Fatalf("db.Fetch(%v) error: %v", p.key, err)
 	}
 	if !bytes.Equal(bb, append(b, b...)) {
-		t.Errorf("c.Fetch(%v) = %v, expected %v", p.key, bb, append(b, b...))
+		t.Errorf("db.Fetch(%v) = %v, expected %v", p.key, bb, append(b, b...))
 	}
 }
 
 func TestDelete(t *testing.T) {
-	c, err := Open(":mem:")
+	db, err := Open(":mem:")
 	if err != nil {
 		t.Fatalf("Open(\":mem:\") error: %s", err)
 	}
-	defer c.Close()
+	defer db.Close()
 
 	for _, p := range keyValuePairs {
 		// Test delete non-existing records.
-		if err := c.Delete(p.key); err != ErrNotFound {
-			t.Fatalf("c.Delete(%v) = %v, expected %v", p.key, err, ErrNotFound)
+		if err := db.Delete(p.key); err != ErrNotFound {
+			t.Fatalf("db.Delete(%v) = %v, expected %v", p.key, err, ErrNotFound)
 		}
 		// Store records.
-		if err := c.Store(p.key, p.value); err != nil {
-			t.Fatalf("c.Store(%v, %v) error: %v", p.key, p.value, err)
+		if err := db.Store(p.key, p.value); err != nil {
+			t.Fatalf("db.Store(%v, %v) error: %v", p.key, p.value, err)
 		}
 		// Fetch and compare records to make sure that they were stored.
-		b, err := c.Fetch(p.key)
+		b, err := db.Fetch(p.key)
 		if err != nil {
-			t.Fatalf("c.Fetch(%v) error: %v", p.key, err)
+			t.Fatalf("db.Fetch(%v) error: %v", p.key, err)
 		}
 		if !bytes.Equal(b, p.value) {
-			t.Errorf("c.Fetch(%v) = %v, expected %v", p.key, b, p.value)
+			t.Errorf("db.Fetch(%v) = %v, expected %v", p.key, b, p.value)
 		}
 		// Test delete records.
-		if err := c.Delete(p.key); err != nil {
-			t.Fatalf("c.Delete(%v) = %v, expected %v", p.key, err, nil)
+		if err := db.Delete(p.key); err != nil {
+			t.Fatalf("db.Delete(%v) = %v, expected %v", p.key, err, nil)
 		}
 	}
 }

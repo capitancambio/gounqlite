@@ -14,6 +14,7 @@ import (
 	"unsafe"
 )
 
+// Errno is an UnQLite library error number.
 type Errno int
 
 func (e Errno) Error() string {
@@ -76,12 +77,13 @@ var errText = map[Errno]string{
 	-1:  "Out of memory",
 }
 
-type Conn struct {
+// Handle is a UnQLite database engine handle.
+type Handle struct {
 	db *C.unqlite
 }
 
-func Open(filename string) (*Conn, error) {
-	// TODO(ceh): default to thread-safe operation only?
+// Open creates a database handle.
+func Open(filename string) (*Handle, error) {
 	var db *C.unqlite
 	name := C.CString(filename)
 	defer C.free(unsafe.Pointer(name))
@@ -92,82 +94,91 @@ func Open(filename string) (*Conn, error) {
 	if db == nil {
 		return nil, errors.New("unqlite unable to allocate memory to hold the database")
 	}
-	return &Conn{db}, nil
+	return &Handle{db}, nil
 }
 
-func (c *Conn) Close() error {
-	if c == nil || c.db == nil {
+// Close closes the database handle.
+func (h *Handle) Close() error {
+	if h == nil || h.db == nil {
 		return errors.New("nil unqlite database")
 	}
-	rv := C.unqlite_close(c.db)
+	rv := C.unqlite_close(h.db)
 	if rv != C.UNQLITE_OK {
 		return Errno(rv)
 	}
-	c.db = nil
+	h.db = nil
 	return nil
 }
 
-func (c *Conn) Store(key, value []byte) error {
-	rv := C.unqlite_kv_store(c.db, unsafe.Pointer(&key[0]), C.int(len(key)), unsafe.Pointer(&value[0]), C.unqlite_int64(len(value)))
+// Store inserts or updates a key-value pair in the database.
+// If the key exists, its value is updated. Otherwise, a new key-value pair is created.
+func (h *Handle) Store(key, value []byte) error {
+	rv := C.unqlite_kv_store(h.db, unsafe.Pointer(&key[0]), C.int(len(key)), unsafe.Pointer(&value[0]), C.unqlite_int64(len(value)))
 	if rv == C.UNQLITE_OK {
 		return nil
 	}
 	return Errno(rv)
 }
 
-func (c *Conn) Append(key, value []byte) error {
-	rv := C.unqlite_kv_append(c.db, unsafe.Pointer(&key[0]), C.int(len(key)), unsafe.Pointer(&value[0]), C.unqlite_int64(len(value)))
+// Append appends value to the key-value pair in the database.
+func (h *Handle) Append(key, value []byte) error {
+	rv := C.unqlite_kv_append(h.db, unsafe.Pointer(&key[0]), C.int(len(key)), unsafe.Pointer(&value[0]), C.unqlite_int64(len(value)))
 	if rv == C.UNQLITE_OK {
 		return nil
 	}
 	return Errno(rv)
 }
 
-// Fetch retrieves a record from the database.
-func (c *Conn) Fetch(key []byte) ([]byte, error) {
+// Fetch retrieves the value for the specified key from the database.
+func (h *Handle) Fetch(key []byte) (value []byte, err error) {
 	// Fetch size of value.
 	var n C.unqlite_int64
-	rv := C.unqlite_kv_fetch(c.db, unsafe.Pointer(&key[0]), C.int(len(key)), nil, &n)
+	rv := C.unqlite_kv_fetch(h.db, unsafe.Pointer(&key[0]), C.int(len(key)), nil, &n)
 	if rv != C.UNQLITE_OK {
 		return nil, Errno(rv)
 	}
 	// Fetch value.
 	b := make([]byte, int(n))
-	rv = C.unqlite_kv_fetch(c.db, unsafe.Pointer(&key[0]), C.int(len(key)), unsafe.Pointer(&b[0]), &n)
+	rv = C.unqlite_kv_fetch(h.db, unsafe.Pointer(&key[0]), C.int(len(key)), unsafe.Pointer(&b[0]), &n)
 	if rv != C.UNQLITE_OK {
 		return nil, Errno(rv)
 	}
 	return b, nil
 }
 
-// Delete removes a record from the database.
-func (c *Conn) Delete(key []byte) error {
-	rv := C.unqlite_kv_delete(c.db, unsafe.Pointer(&key[0]), C.int(len(key)))
+// Delete removes a key-value pair from the database.
+func (h *Handle) Delete(key []byte) error {
+	rv := C.unqlite_kv_delete(h.db, unsafe.Pointer(&key[0]), C.int(len(key)))
 	if rv != C.UNQLITE_OK {
 		return Errno(rv)
 	}
 	return nil
 }
 
+// Threadsafe returns true if the UnQlite library was compiled for thread-safe operation, else false.
 func Threadsafe() bool {
 	return C.unqlite_lib_is_threadsafe() == 1
 }
 
+// Version returns the UnQLite library version.
 func Version() string {
 	p := C.unqlite_lib_version()
 	return C.GoString(p)
 }
 
+// Signature returns the UnQLite library signature.
 func Signature() string {
 	p := C.unqlite_lib_signature()
 	return C.GoString(p)
 }
 
+// Ident returns the UnQLite library revision identifier.
 func Ident() string {
 	p := C.unqlite_lib_ident()
 	return C.GoString(p)
 }
 
+// Copyright returns the UnQLite library copyright notice.
 func Copyright() string {
 	p := C.unqlite_lib_copyright()
 	return C.GoString(p)
