@@ -111,6 +111,7 @@ func (h *Handle) Close() error {
 }
 
 // Store inserts or updates a key-value pair in the database.
+//
 // If the key exists, its value is updated. Otherwise, a new key-value pair is created.
 func (h *Handle) Store(key, value []byte) error {
 	rv := C.unqlite_kv_store(h.db, unsafe.Pointer(&key[0]), C.int(len(key)), unsafe.Pointer(&value[0]), C.unqlite_int64(len(value)))

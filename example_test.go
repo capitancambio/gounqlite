@@ -28,7 +28,7 @@ func ExampleOpen() {
 	db.Close()
 }
 
-func ExampleClose() {
+func ExampleHandle_Close() {
 	db, err := gounqlite.Open(":mem:")
 	check(err)
 
@@ -40,7 +40,7 @@ func ExampleClose() {
 	// Output: nil unqlite database
 }
 
-func ExampleConn_Store() {
+func ExampleHandle_Store() {
 	db, err := gounqlite.Open(":mem:")
 	check(err)
 	defer db.Close()
@@ -48,7 +48,7 @@ func ExampleConn_Store() {
 	db.Store([]byte("key"), []byte("value"))
 }
 
-func ExampleConn_Append() {
+func ExampleHandle_Append() {
 	db, err := gounqlite.Open(":mem:")
 	check(err)
 	defer db.Close()
@@ -67,7 +67,7 @@ func ExampleConn_Append() {
 	// [97 98]
 }
 
-func ExampleConn_Fetch() {
+func ExampleHandle_Fetch() {
 	db, err := gounqlite.Open(":mem:")
 	check(err)
 	defer db.Close()
@@ -84,7 +84,7 @@ func ExampleConn_Fetch() {
 	// [97]
 }
 
-func ExampleConn_Delete() {
+func ExampleHandle_Delete() {
 	db, err := gounqlite.Open(":mem:")
 	check(err)
 	defer db.Close()
